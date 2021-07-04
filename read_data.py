@@ -38,13 +38,29 @@ except ImportError:
         '''analyze binary hitbuffer data, return number of seconds and number of hits'''
         # unpack tuples returned by iter_unpack
         words = (value for value, in struct.iter_unpack('<I', data_in))
-        seconds = hits = 0
+        # hitbuffer files have the following stucture. to always count hits in a whole number
+        # of seconds, we discard the entries marked with X -> subtract two seconds at the end
+        # PPS year X
+        # PPS second X
+        # hits X
+        # repeat:
+        #    PPS second
+        #    hits
+        # PPS second X
+        # hits X
+        seconds = hits = hits_temp = 0
         # decode frames
         try:
+            print('start')
             for header in words:
                 frame_type = header >> 24
                 if frame_type == OBJECT_CODE_PPS_SECOND:
                     # print('PPS second', header & 0x03ffffff)
+                    # start counting hits after the second PPS sec 
+                    if seconds < 2:
+                        hits_temp = 0
+                    # store hits after every second to discard all hits after the last PPS second
+                    hits = hits_temp
                     seconds += 1
                 elif frame_type == OBJECT_CODE_PPS_YEAR:
                     # print('PPS year')
@@ -55,7 +71,8 @@ except ImportError:
                 elif frame_type == OBJECT_CODE_DATA_FORMAT:
                     pass
                 else: # hit
-                    hits += 1
+                    # print('hit')
+                    hits_temp += 1
                     # skip remaining words
                     multi = next(words)
                     adc_count = (multi >> 28) & 0xf
@@ -64,6 +81,9 @@ except ImportError:
                         next(words)
         except StopIteration:
             raise ValueError('Incomplete frame at end of data')
+        seconds -= 2
+        if seconds < 1:
+            raise ValueError('too little data')
         return seconds, hits
 
 def decode_cobs(packet: bytes) -> bytes:
@@ -197,6 +217,6 @@ def read_tar_outer(p: Path):
 
 # read_tar_outer('./data-hitbuf/scint-taxi-MicroDAQ_hitbuf_20210114.flat.tar')
 # read_tar_outer('./data-hitbuf/scint-taxi-MicroDAQ_hitbuf_20210125.flat.tar')
-read_tar_outer('./data-hitbuf/scint-taxi-MicroDAQ_hitbuf_20210302.flat.tar')
+# read_tar_outer('./data-hitbuf/scint-taxi-MicroDAQ_hitbuf_20210302.flat.tar')
 
-# read_tar_outer(sys.argv[1])
+read_tar_outer(sys.argv[1])

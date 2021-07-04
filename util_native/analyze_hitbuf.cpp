@@ -9,7 +9,7 @@ const uint8_t OBJECT_CODE_DATA_FORMAT = 0xe6;
 
 std::tuple<int, int> analyze_hitbuf(pybind11::bytes input) {
     pybind11::buffer_info info(pybind11::buffer(input).request());
-    int seconds = 0, hits = 0;
+    int seconds = 0, hits = 0, hits_temp = 0;
     // all byte objects seem to be aligned to 16 bits
     uint32_t *data = (uint32_t *)info.ptr;
     std::size_t count = info.size / sizeof(uint32_t);
@@ -18,6 +18,10 @@ std::tuple<int, int> analyze_hitbuf(pybind11::bytes input) {
         uint8_t type = static_cast<uint8_t>(header >> 24);
         switch (type) {
             case OBJECT_CODE_PPS_SECOND: {
+                if (seconds < 2) {
+                    hits_temp = 0;
+                }
+                hits = hits_temp;
                 seconds++;
                 break;
             }
@@ -33,7 +37,7 @@ std::tuple<int, int> analyze_hitbuf(pybind11::bytes input) {
                 break; // do nothing
             }
             default: {
-                hits++;
+                hits_temp++;
                 i++; // next word contains number of ADCs
                 if (i >= count) {
                     throw pybind11::value_error("incomplete frame");
@@ -47,6 +51,10 @@ std::tuple<int, int> analyze_hitbuf(pybind11::bytes input) {
                 break;
             }
         }
+    }
+    seconds -= 2;
+    if (seconds < 1) {
+        throw pybind11::value_error("too little data");
     }
     return std::make_tuple(seconds, hits);
 }
