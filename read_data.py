@@ -202,7 +202,12 @@ def read_tar_inner(i: IO[bytes]):
                     print(m.info.name, e, file=sys.stderr)
                     continue
             elif m.type == BinType.MONITOR:
-                decode_cobs_monitor(tar.extractfile(m.info).read())
+                _, temp = decode_cobs_monitor(tar.extractfile(m.info).read())
+                json.dump({
+                    'channel': m.channel,
+                    'time': m.time.timestamp(),
+                    'temp': temp,
+                }, sys.stdout)
 
 
 def read_tar_outer(p: Path):
