@@ -91,7 +91,7 @@ def decode_cobs(packet: bytes) -> bytes:
         raise ValueError(f'packet too short {packet}')
     packet = cobs.decode(packet)
     cs_calc = fletcher_16(packet[:-2])
-    cs_recv, = struct.unpack('>H', packet[-2:])
+    cs_recv, = struct.unpack('<H', packet[-2:])
     if cs_calc != cs_recv:
         raise ValueError(f'invalid checksum {cs_calc:04X} {cs_recv:04X}')
         # raise ValueError(f'invalid checksum {cs_calc=:04X} {cs_recv=:04X}')
@@ -145,7 +145,6 @@ def decode_cobs_monitor(data_in: bytes) -> Tuple[datetime.datetime, float]:
     year, day, h, m, s = map(int, ptime) # convert to int
     time = datetime.datetime(2000 + year, 1, 1, h, m, s) + datetime.timedelta(day - 1)
     return time, temperature
-
 
 class BinType(enum.IntEnum):
     MONITOR = 0
@@ -208,6 +207,7 @@ def read_tar_inner(i: IO[bytes]):
                     'time': m.time.timestamp(),
                     'temp': temp,
                 }, sys.stdout)
+                sys.stdout.write('\n')
 
 
 def read_tar_outer(p: Path):
