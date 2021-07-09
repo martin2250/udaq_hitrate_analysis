@@ -32,18 +32,24 @@ for i_panel, panel in enumerate(panels):
         i_cutoff = np.argmax(panel.hits_date > np.datetime64('2021-06-15'))
         panel.hits_rate = panel.hits_rate[:i_cutoff]
         panel.hits_date = panel.hits_date[:i_cutoff]
+        mip_threshold = 4
     else:
         # low threshold (0.5 MIP)
         i_cutoff = np.argmax(panel.hits_date > np.datetime64('2021-06-16'))
         panel.hits_rate = panel.hits_rate[i_cutoff:]
         panel.hits_date = panel.hits_date[i_cutoff:]
+        mip_threshold = 1.5
 
     weather_column = np.interp(
         panel.hits_date.astype('f'),
         weather_date.astype('f'),
         weather[columns.index(column_name)]
     )
-    hitrate = panel.hits_rate[:, thresholds_mip.index(1.5)]#  - panel.hits_rate[:, thresholds_mip.index(3.5)]
+
+    hitrate = panel.hits_rate[:, thresholds_mip.index(mip_threshold)]
+
+    slope, offset = np.polyfit(weather_column, hitrate, 1)
+    print(f'panel {i_panel} {slope=:0.3f} {offset=:0.1f}  {100*slope/offset=:0.3f}')
 
     if column_name == 'rh':
         ok = weather_column > 0
