@@ -12,10 +12,25 @@ weather = np.loadtxt('weather_data/weather.dat.gz', skiprows=2, unpack=True)
 temp = weather[columns.index('temp')]
 pressure = weather[columns.index('pressure')]
 
-ax1 = plt.gca()
-ax1.plot(temp, pressure, 'r.', alpha=0.1)
+weather_date = np.array([
+    (
+        datetime.datetime(int(year), 1, 1) +
+        datetime.timedelta(days=int(jday)-1, hours=int(hour),
+                           minutes=int(minute))
+    ).timestamp()
+    for year, jday, hour, minute in zip(weather[0], weather[1], weather[4], weather[5])
+]).astype('datetime64[s]')
 
-ax1.set_xlabel('Temperature (K)')
+
+ax1 = plt.gca()
+ax2 = ax1.twinx()
+
+ax1.plot(weather_date, pressure, 'k.', alpha=0.1)
+ax2.plot(weather_date, temp, 'r.', alpha=0.1)
+# ax1.plot(temp, pressure, 'r.', alpha=0.1)
+
+# ax1.set_xlabel('Temperature (K)')
+ax2.set_ylabel('Temperature (K)')
 ax1.set_ylabel('Pressure (mbar)')
-# plt.show()
-plt.savefig('temppressure.png')
+plt.show()
+# plt.savefig('temppressure.png')

@@ -26,25 +26,28 @@ class IceScintPanel:
         fix('temp_date', 'temp_temp')
         fix('hits_date', 'hits_rate')
 
+def load_hitrate(input_file: str) -> list[IceScintPanel]:
+    panels = [
+        IceScintPanel([], [], [], [])
+        for _ in range(8)
+    ]
 
-panels = [
-    IceScintPanel([], [], [], [])
-    for _ in range(8)
-]
+    with gzip.open(input_file, 'rt') as f_in:
+    # with gzip.open('data/result.json.gz', 'rt') as f_in:
+        for line in f_in:
+            data = json.loads(line)
+            channel = int(data['channel'])
+            time = float(data['time'])
+            if 'results' in data:
+                results = data['results']
+                panels[channel].hits_date.append(time)
+                panels[channel].hits_rate.append(results)
+            elif 'temp' in data:
+                temp = float(data['temp'])
+                panels[channel].temp_date.append(time)
+                panels[channel].temp_temp.append(temp)
 
-with gzip.open('data/result.json.gz', 'rt') as f_in:
-    for line in f_in:
-        data = json.loads(line)
-        channel = int(data['channel'])
-        time = float(data['time'])
-        if 'results' in data:
-            results = data['results']
-            panels[channel].hits_date.append(time)
-            panels[channel].hits_rate.append(results)
-        elif 'temp' in data:
-            temp = float(data['temp'])
-            panels[channel].temp_date.append(time)
-            panels[channel].temp_temp.append(temp)
-
-for panel in panels:
-    panel.fix()
+    for panel in panels:
+        panel.fix()
+    
+    return panels
